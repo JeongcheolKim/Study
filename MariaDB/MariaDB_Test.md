@@ -9,16 +9,16 @@
 
 
 # 2. MariaDB 클래스 파악
-MySqlConnection 객체 생성   
+MySqlConnection 객체 생성
 MySqlConnection conn = new MySqlConnection(connStr);
 
 
 **MySqlConnection**
-    Open	<< 데이터베이스 연결 (데이터베이스 오픈)
-    Close	<< 데이터베이스 연결해제
-    CreateCommand << MySqlCommand 객체를 만들고 반환함
-    BeginTransaction	<< 데이터베이스 트랜잭션 시작
-    CommandText << get,set 프로퍼티 , 쿼리문 담는데 사용
+Open	<< 데이터베이스 연결 (데이터베이스 오픈)
+Close	<< 데이터베이스 연결해제
+CreateCommand << MySqlCommand 객체를 만들고 반환함
+BeginTransaction	<< 데이터베이스 트랜잭션 시작
+CommandText << get,set 프로퍼티 , 쿼리문 담는데 사용
 
 **MySqlTransaction**
     데이터베이스에서 만들어지는 SQL 트랜잭션을 표시함
