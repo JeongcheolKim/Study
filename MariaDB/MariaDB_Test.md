@@ -23,6 +23,9 @@
 
     데이터베이스에서 만들어지는 SQL 트랜잭션을 표시함
     - 조금 더 봐야할 듯
+    
+    Commit          << 작업 결과를 저장, 조작 완료됨 전달
+    Rollback        << 작업 내용 원래 상태로 복구
 
 
 - 객체 생성 및 매개변수
@@ -65,11 +68,18 @@
     사용이 종료되면 Close() 메서드 이용해서 닫아주어야함
 
 
+**DataTable**
+
+    Load(IDataReader)       << DataTable 이용해서 DataReader을 데이터 소스값으로 채움
+
+
+
 # 3. MariaDB 샘플코드
 <details>
 <summary> 코드 펼치기 </summary>
 
 ```c
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -120,7 +130,7 @@ namespace MariaDB
                 dbConnection.Open();
                 Console.Write("DB Open Complete");
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine("DB open problem : " + ex.Message.ToString());
                 close();
@@ -144,23 +154,23 @@ namespace MariaDB
             int iret = 1;
             try
             {
-                if(dbConnection != null)    // dbConnection 객체 존재하면
+                if (dbConnection != null)    // dbConnection 객체 존재하면
                 {
                     dbConnection.Close();
                     Console.WriteLine("DB Close Complete");
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 iret = -1;
             }
             dbConnection = null;    // dbConnection null
             return iret;    // 정상 : 1, 비정상 -1
         }
-        
 
-        //insert, update, delete [overloading] -> 성공한 row 갯수를 리턴함
-        public int insert(string sql)
+
+        //insert, update, delete transaction -> 성공한 row 갯수를 리턴함
+        public int run(string sql)  // 단일 쿼리 (1 리턴이 정상)
         {
             int iret = 0;
             try
@@ -176,7 +186,7 @@ namespace MariaDB
             return iret;
         }
 
-        public int update(string[] sqls)
+        public int runs(string[] sqls) // 다수 쿼리 (1 이상 리턴이 정상)
         {
             int iret = 0;
             MySqlCommand cmd = dbConnection.CreateCommand();
@@ -191,17 +201,58 @@ namespace MariaDB
             {
                 try
                 {
-                    for(int i = 0; i < sqls.Length; i++)
+                    for (int i = 0; i < sqls.Length; i++)
                     {
                         cmd.CommandText = sqls[i];  // 커맨드 텍스트에 쿼리문 반복하면서 대입
                         iret += cmd.ExecuteNonQuery();  // 정상이면 1 리턴
                     }
+                    tran.Commit(); // 작업 결과 저장, 조작 완료됨 전달
+                    Console.WriteLine("MariaDB Commit Complete");
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine("DB Transaction error : " + ex.Message.ToString());
+                    tran.Rollback();    //작업 내용 원래 상태로 복구
+                    iret = -1;
                 }
             }
+            return iret;
         }
 
+        // select 쿼리 수행 -> DataTable 리턴
+        public DataTable select(string sql)
+        {
+            var mySqlDataTable = new DataTable();
+            try
+            {
+                MySqlCommand mySqlCommand = new MySqlCommand(sql, dbConnection);
+                MySqlDataReader mySqlDataReader = mySqlCommand.ExecuteReader();
+                mySqlDataTable.Load(mySqlDataReader);   //DataTable 이용해서 DataReader을 데이터 소스값으로 채움
 
+                StringBuilder output = new StringBuilder(); //객체생성없이 문자열 수정할 때 사용
+                foreach(DataColumn col in mySqlDataTable.Columns)
+                {
+                    output.AppendFormat("{0}", col);    // 개체 끝에 텍스트 추가함.
+                }
+                output.AppendLine(); // 개체 끝에 줄 종결자 추가
+                foreach(DataRow page in mySqlDataTable.Rows)
+                {
+                    foreach(DataColumn col in mySqlDataTable.Columns)
+                    {
+                        output.AppendFormat("{0}", page[col]);
+                    }
+                    output.AppendLine();
+                }
+                Console.WriteLine(output.ToString());
 
+                mySqlDataReader.Close();
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            return mySqlDataTable;
+        }
 
     }
 }
