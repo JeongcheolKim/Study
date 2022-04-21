@@ -83,3 +83,107 @@ Sale, Dictionary, foreach dictionary 부분을 var 로 치환
     -	for 문이나 foreach 문에서 루프 변수 형 지정할 때 사용
 
 
+
+'''c
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace App   // 프로그램과 동일하게 해주면 그대로 사용가능
+{
+    public class Sale // 판매 정보 객체
+    {
+        public string ShopName { get; set; }
+        public string ProductCategory { get; set; }
+        public int Amount { get; set; }
+
+    }
+
+    // 점포 별 매출 계산
+    public class SalesCounter
+    {
+        private IEnumerable<Sale> _sales;
+
+        //생성자
+        public SalesCounter(List<Sale> sales)   // List<Sale> 객체 받아서 private _sales에 대입
+        {
+            _sales = sales;
+        }
+
+        public SalesCounter(string filepath)
+        {
+            _sales = ReadSales(filepath);
+        }
+
+        // 매출 계산
+        public IDictionary<string, int> GetPerStoreSales()   // Dictionary(반환값)에 key값(점포이름) 기준으로 value 합산하는 방식
+        {
+            var dict = new Dictionary<string, int>();
+            foreach(var sale in _sales)    //_sales 딕셔너리에서 Sale 객체 하나씩 꺼냄
+            {
+                if (dict.ContainsKey(sale.ShopName))    // sale객체의 ShopName이 dict의 key값으로 저장되어 있는지 확인
+                    dict[sale.ShopName] += sale.Amount; // 이미 있는 key의 경우 원래 value에 지금 value 합산
+                else // key값 저장되어 있지 않을 경우 dict의 key값에 sale.Amount(value) 값 대입하며 저장
+                    dict[sale.ShopName] = sale.Amount;
+            }
+            return dict;    // 결과 Dictionary 반환
+        }
+
+        private static IEnumerable<Sale> ReadSales(string filePath)    //파일 경로에서 파일 읽기
+        {
+            List<Sale> sales = new List<Sale>();    // 리스트 객체 생성( Sale 클래스 객체 )
+            string[] lines = File.ReadAllLines(filePath);   // 경로의 파일에서 모든 라인 읽기
+            foreach (string line in lines)   // 한 줄 씩 읽기
+            {
+                string[] items = line.Split(',');   // 콤마로 구분 된 것 나누어서 item 배열에
+                Sale sale = new Sale    // Sale 객체
+                {
+                    ShopName = items[0],    // 처음 요소 가게이름
+                    ProductCategory = items[1], // 두번째 요소 물건 카테고리
+                    Amount = int.Parse(items[2])    // 세번째 요소 수량
+                };
+                sales.Add(sale); // sales 리스트 객체에 sale 객체 추가
+            }
+            return sales;   // sales 리스트 객체 반환
+        }
+    }
+}
+'''
+
+
+'''c
+using System.IO;
+
+
+namespace App // 클래스와 같게 해주면 그대로 사용 가능
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            var sales = new SalesCounter("sales.csv");  //파일경로에서 파일 읽기 - 객체 대입
+            var amountPerStore = sales.GetPerStoreSales();  //매점 별 매출 계산
+
+            foreach (var obj in amountPerStore)
+            {
+                Console.WriteLine("{0} {1}", obj.Key, obj.Value);
+            }
+        }
+
+        
+    }
+}
+
+//Main 메서드에서 SalesCounter 클래스 인스턴스 먼저 생성함.
+// 생성자로 넘겨주는 객체는 ReadSales 메서드에서 반환된 List<Sale> 객체
+// 점포 별 매출액 집계 후 - foreach문에서 딕셔너리에 저장된 요소를 꺼내서 해당 Key, Value를 출력함.
+
+// Dictionary<string, int> amountPerStore = new Dictionary<string, int>();      ->> 이렇게 객체 생성하면 '안된다'
+// amountPerStore = sales.GetPerStoreSales();
+
+//new를 통해 객체가 생성되지만 그 다음 GetPerStoreSales 메서드 안에서 (Dictionary 객체 생성이 포함되어 있다)
+// 내부에서 생성된 객체의 참조를 반환하기 때문에 메모리 낭비         ->> 그럼 매개변수로 dictionary를 넘겨주고 내부에서 객체생성을 안하면?
+'''
+
